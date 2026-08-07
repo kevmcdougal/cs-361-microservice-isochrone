@@ -72,5 +72,47 @@ async def log_elapsed(request: Request, call_next):
 
 
 # ---------------------------------------------------------------------------
-# GET Isochrone
+# GET isochrone
 # ---------------------------------------------------------------------------
+@app.get("/isochrone")
+async def isochrone(
+    location: str = Query(default="", description="Start coordinate as 'lat,lon'"),
+    costing: str = Query(default="", description="modes as auto, bicycle, or pedestrian"),
+    minutes: int = Query(default=10, decription="travel time in minutes")
+):
+
+    if not location.strip() or not costing.strip():
+        return error(400, "missing_parameter", "Parameters 'start' and 'end' are both required.")
+
+    if minutes <= 0:
+        return error(400, "invalid_time", "Travel time in minutes must be a postive integer")
+
+    try:
+        lat, lon = parse_coordinate(location, "location")
+    except ValueError as exc:
+        # No partial route is returned - the request stops here.
+        return error(400, "invalid_coordinate", str(exc))
+
+    if costing not in VALID_COSTINGS:
+        return error(
+            400,
+            "invalid_costing",
+            f"Parameter 'costing' must be one of: {', '.join(sorted(VALID_COSTINGS))}.",
+        )
+
+    payload = {
+        "locations": [{"lat": lat, "lon": lon}],
+        "costing": costing,
+        "polygons": True,
+        "contours": [{"time": minutes}],
+    }
+
+    # Call to Valhalla engine
+    try:
+        async with httpx.AsyncClient(timeout=ENGINE_TIMEOUT) as client:
+            resp = await client.post(f"{VALHALLA_URL}/isochrone", json=payload)
+    except httpx.HTTPError as exc:
+        return error(502, "routing_engine_unavailable", f"Could not reach the routing engine: {exc}")
+
+
+    return
