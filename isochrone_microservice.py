@@ -20,6 +20,7 @@ import time
 import httpx
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse
+import json
 
 # ---------------------------------------------------------------------------
 # Configuration - this service calls Valhalla routing engine
@@ -115,4 +116,11 @@ async def isochrone(
         return error(502, "routing_engine_unavailable", f"Could not reach the routing engine: {exc}")
 
 
-    return
+    if resp.status_code != 200:
+        return error(404, "no_isochrone_found", "The routing engine could not create an isochrone from that location")
+
+    geojson = resp.json()
+
+    print(json.dumps(geojson, indent=2))  # temporary - remove once you're done inspecting
+
+    return geojson
