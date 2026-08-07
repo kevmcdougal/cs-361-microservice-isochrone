@@ -32,7 +32,10 @@ import json
 VALHALLA_URL = os.getenv("VALHALLA_URL", "http://localhost:8002")
 ENGINE_TIMEOUT = float(os.getenv("ENGINE_TIMEOUT", "8.0"))
 
-VALID_COSTINGS = {"auto", "bicycle", "pedestrian"}
+VALID_MODES ={"drive", "bike", "walk"}
+VALID_COSTINGS = {"auto", "bicycle", "pedestrian"} #valhalla uses these keys for drive, bike, walk
+
+MODE_COSTING_MAP = {"drive": "auto", "bike": "bicycle", "walk": "pedestrian"}
 
 app = FastAPI(title="Isochrone Microservice", version="1.0.0")
 
@@ -81,11 +84,11 @@ async def log_elapsed(request: Request, call_next):
 @app.get("/isochrone")
 async def isochrone(
     location: str = Query(default="", description="Start coordinate as 'lat,lon'"),
-    costing: str = Query(default="", description="modes as auto, bicycle, or pedestrian"),
+    mode: str = Query(default="", description="modes as car, bike, walk"), #auto, bicycle, or pedestrian"),
     minutes: int = Query(default=10, decription="travel time in minutes")
 ):
 
-    if not location.strip() or not costing.strip():
+    if not location.strip() or not mode.strip():
         return error(400, "missing_parameter", "Parameters 'start' and 'end' are both required.")
 
     if minutes <= 0:
@@ -97,7 +100,7 @@ async def isochrone(
         # No partial route is returned - the request stops here.
         return error(400, "invalid_coordinate", str(exc))
 
-    if costing not in VALID_COSTINGS:
+    if mode not in VALID_MODES:
         return error(
             400,
             "invalid_costing",
@@ -106,7 +109,7 @@ async def isochrone(
 
     payload = {
         "locations": [{"lat": lat, "lon": lon}],
-        "costing": costing,
+        "costing": MODE_COSTING_MAP[mode],
         "polygons": True,
         "contours": [{"time": minutes, "color": "90EE90"}], #green, can change if you want different color
     }
@@ -127,7 +130,7 @@ async def isochrone(
     #echo back location, costing and travel_time
     return {
         "location": [lat, lon],
-        "costing": costing,
+        "mode": mode,
         "minutes": minutes,
         "geojson": geojson,
     }
