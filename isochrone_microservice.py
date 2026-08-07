@@ -131,3 +131,18 @@ async def isochrone(
         "minutes": minutes,
         "geojson": geojson,
     }
+
+# ---------------------------------------------------------------------------
+# Convenience endpoint - not part of the communication contract
+# ---------------------------------------------------------------------------
+@app.get("/health")
+async def health():
+    status = {"service": "ok", "nominatim": "unknown", "valhalla": "unknown"}
+    async with httpx.AsyncClient(timeout=3.0) as client:
+        for name, url in ("valhalla", f"{VALHALLA_URL}/status"):
+            try:
+                r = await client.get(url)
+                status[name] = "ok" if r.status_code < 500 else f"http {r.status_code}"
+            except httpx.HTTPError:
+                status[name] = "unreachable"
+    return status
