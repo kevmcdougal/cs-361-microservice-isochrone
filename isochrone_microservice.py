@@ -104,7 +104,7 @@ async def isochrone(
         return error(
             400,
             "invalid_costing",
-            f"Parameter 'costing' must be one of: {', '.join(sorted(VALID_COSTINGS))}.",
+            f"Parameter 'costing' must be one of: {', '.join(sorted(VALID_MODES))}.",
         )
 
     payload = {
@@ -127,6 +127,7 @@ async def isochrone(
 
     geojson = resp.json()
 
+    print(json.dumps(geojson, indent=2))
     #echo back location, costing and travel_time
     return {
         "location": [lat, lon],
