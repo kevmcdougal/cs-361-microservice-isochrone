@@ -124,6 +124,10 @@ async def isochrone(
 
     geojson = resp.json()
 
-    print(json.dumps(geojson, indent=2))  # temporary - remove once you're done inspecting
-
-    return geojson
+    #echo back location, costing and travel_time
+    return {
+        "location": [lat, lon],
+        "costing": costing,
+        "minutes": minutes,
+        "geojson": geojson,
+    }
