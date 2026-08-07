@@ -8,10 +8,13 @@ nothing from any consumer's main program.
 
 Endpoints:
      GET /isochrone?json={"lat"}
+
+     Example call from Valhalla isochrone API reference:
+     https://valhalla.github.io/valhalla/api/isochrone/
      {"locations":[{"lat":40.744014,"lon":-73.990508}],"costing":"pedestrian","contours":[{"time":15.0,"color":"ff0000"}]}&id=Walk_From_Office
 
 Run:
-    uvicorn geocoding_service:app --port 8001 --reload
+     uvicorn isochrone_microservice:app --reload --port 8003
 """
 
 import os
@@ -105,7 +108,7 @@ async def isochrone(
         "locations": [{"lat": lat, "lon": lon}],
         "costing": costing,
         "polygons": True,
-        "contours": [{"time": minutes}],
+        "contours": [{"time": minutes, "color": "90EE90"}], #green, can change if you want different color
     }
 
     # Call to Valhalla engine
