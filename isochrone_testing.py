@@ -8,7 +8,7 @@ it never touches the microservice's engine. The ONLY channel between this
 program and the microservice is HTTP over the REST communication pipe.
 
 Run the microservice first:
-    uvicorn main:app --port 8006
+    uvicorn main:app --port 8003
 
 Then, in a second terminal:
     python test_program.py
@@ -18,7 +18,7 @@ import json
 
 import requests  # third-party HTTP client - NOT microservice code
 
-BASE_URL = "http://localhost:8006"
+BASE_URL = "http://localhost:8003"
 TIMEOUT = 30
 
 # Real Inland Empire coordinates - inside the loaded map region.
@@ -74,18 +74,20 @@ def scenario_1_isochrone() -> None:
           f"{response.elapsed.total_seconds() * 1000:.0f} ms")
     data = response.json()
 
+    response_geojson = data['geojson']
+
     if response.status_code != 200:
         print(f"ERROR      <- {data['error']}: {data['message']}")
         return
 
-    feature = data["features"][0]
+    feature = response_geojson["features"][0]
     all_rings = rings(feature["geometry"])
     total_points = sum(len(r) for r in all_rings)
-    print(f"  type            : {data['type']}")
+    print(f"  type            : {response_geojson['type']}")
     print(f"  location        : {data['location']}")
     print(f"  minutes         : {data['minutes']}")
     print(f"  mode            : {data['mode']}")
-    print(f"  feature count   : {len(data['features'])}")
+    print(f"  feature count   : {len(response_geojson['features'])}")
     print(f"  geometry type   : {feature['geometry']['type']}")
     print(f"  boundary points : {total_points}")
     print(f"  first position  : {all_rings[0][0]}  (GeoJSON order: [lon, lat])")
@@ -103,8 +105,11 @@ def scenario_2_encloses_start() -> None:
         return
 
     data = response.json()
+    response_geojson = data['geojson']
+
+
     lat, lon = data["location"]
-    all_rings = rings(data["features"][0]["geometry"])
+    all_rings = rings(response_geojson["features"][0]["geometry"])
 
     # A point inside an odd number of rings is inside the shape.
     hits = sum(1 for ring in all_rings if point_in_ring(lon, lat, ring))
@@ -148,6 +153,7 @@ def scenario_4_invalid_mode() -> None:
 
     print(f"RECEIVED   <- HTTP {response.status_code}")
     data = response.json()
+
     print(f"  error   : {data['error']}")
     print(f"  message : {data['message']}")
     print(f"  lists the accepted modes? "
@@ -160,13 +166,15 @@ def scenario_5_mode_sizes() -> None:
     """A walk isochrone must cover less ground than a drive isochrone."""
     banner("SCENARIO 5 - Slower modes reach less far in the same time")
 
-    for mode in ("drive", "bike", "walk"):
+    for mode in ("walk", "bike", "drive"):
         params = {"location": UCR, "minutes": 10, "mode": mode}
         response = requests.get(f"{BASE_URL}/isochrone", params=params, timeout=TIMEOUT)
         if response.status_code != 200:
             print(f"  {mode:6s} -> ERROR {response.json().get('error')}")
             continue
-        all_rings = rings(response.json()["features"][0]["geometry"])
+        data = response.json()
+        response_geojson = data['geojson']
+        all_rings = rings(response_geojson["features"][0]["geometry"])
         lons = [p[0] for ring in all_rings for p in ring]
         lats = [p[1] for ring in all_rings for p in ring]
         span_lon = max(lons) - min(lons)
