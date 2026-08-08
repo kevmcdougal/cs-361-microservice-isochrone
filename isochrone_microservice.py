@@ -88,8 +88,11 @@ async def isochrone(
     minutes: int = Query(default=10, decription="travel time in minutes")
 ):
 
-    if not location.strip() or not mode.strip():
-        return error(400, "missing_parameter", "Parameters 'start' and 'end' are both required.")
+    if not location.strip():
+        return error(400, "missing_location", "Starting location is required.")
+
+    if not mode.strip():
+        return error(400, "missing_mode", "Require a mode of transport")
 
     if minutes <= 0:
         return error(400, "invalid_time", "Travel time in minutes must be a postive integer")
@@ -103,8 +106,8 @@ async def isochrone(
     if mode not in VALID_MODES:
         return error(
             400,
-            "invalid_costing",
-            f"Parameter 'costing' must be one of: {', '.join(sorted(VALID_MODES))}.",
+            "invalid_mode",
+            f"Parameter 'mode' must be one of: {', '.join(sorted(VALID_MODES))}.",
         )
 
     payload = {
@@ -127,7 +130,6 @@ async def isochrone(
 
     geojson = resp.json()
 
-    print(json.dumps(geojson, indent=2))
     #echo back location, costing and travel_time
     return {
         "location": [lat, lon],
