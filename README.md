@@ -1,5 +1,8 @@
 # cs-361-microservice-isochrone
-For the isochrone microservice in CS 361
+An Isochrone is an enclosed shape on a map that can be reached within a specified travel time from a location
+![Example Image](isochrone_image.png)
+
+This microservice takes in a location (latitude and longitude), travel mode (walk, bike, drive), and travel time (minutes) and returns the geoJSON for a polygon representing the border of the surrounding area that fits within that travel time.
 
 ## Requesting Data from the microservice
 Send an HTTP GET request to the microservice, with a coordinate, travel mode, and time budget as query parameters.<br>
